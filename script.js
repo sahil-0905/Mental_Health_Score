@@ -1,397 +1,432 @@
-// =========================================
-// API URL
-// =========================================
+// =========================================================
+// Helper
+// =========================================================
 
-const API_URL = "https://mental-health-score-zqix.onrender.com/";
-
-
-// =========================================
-// GET ELEMENTS
-// =========================================
-
-const form =
-    document.getElementById("predictionForm");
-
-const predictBtn =
-    document.getElementById("predictBtn");
-
-const buttonText =
-    document.getElementById("buttonText");
-
-const loader =
-    document.getElementById("loader");
-
-const predictionScore =
-    document.getElementById("predictionScore");
-
-const predictionStatus =
-    document.getElementById("predictionStatus");
-
-const errorBox =
-    document.getElementById("error");
-
-const errorMessage =
-    document.getElementById("errorMessage");
-
-const scoreCircle =
-    document.querySelector(".score-circle");
+const $ = (id) => document.getElementById(id);
 
 
-// =========================================
-// RANGE ELEMENTS
-// =========================================
+// =========================================================
+// Slider Values
+// =========================================================
 
-const usage =
-    document.getElementById("usage");
+const usageSlider = $("avg_daily_usage_hours");
+const usageValue = $("usageValue");
 
-const usageValue =
-    document.getElementById("usageValue");
+const unlockSlider = $("daily_unlocks");
+const unlockValue = $("unlockValue");
 
+const studySlider = $("study_hours");
+const studyValue = $("studyValue");
 
-const unlocks =
-    document.getElementById("unlocks");
+const activitySlider = $("physical_activity_hours");
+const activityValue = $("activityValue");
 
-const unlockValue =
-    document.getElementById("unlockValue");
-
-
-const study =
-    document.getElementById("study");
-
-const studyValue =
-    document.getElementById("studyValue");
+const sleepSlider = $("sleep_hours_per_night");
+const sleepValue = $("sleepValue");
 
 
-const activity =
-    document.getElementById("activity");
-
-const activityValue =
-    document.getElementById("activityValue");
-
-
-const sleep =
-    document.getElementById("sleep");
-
-const sleepValue =
-    document.getElementById("sleepValue");
-
-
-// =========================================
-// RANGE VALUE UPDATE
-// =========================================
-
-usage.addEventListener("input", function () {
+// Daily Usage
+usageSlider.addEventListener("input", () => {
 
     usageValue.textContent =
-        `${this.value} hrs`;
+        `${usageSlider.value} hrs`;
 
 });
 
 
-unlocks.addEventListener("input", function () {
+// Daily Unlocks
+unlockSlider.addEventListener("input", () => {
 
     unlockValue.textContent =
-        this.value;
+        unlockSlider.value;
 
 });
 
 
-study.addEventListener("input", function () {
+// Study Hours
+studySlider.addEventListener("input", () => {
 
     studyValue.textContent =
-        `${this.value} hrs`;
+        `${studySlider.value} hrs`;
 
 });
 
 
-activity.addEventListener("input", function () {
+// Physical Activity
+activitySlider.addEventListener("input", () => {
 
     activityValue.textContent =
-        `${this.value} hrs`;
+        `${activitySlider.value} hrs`;
 
 });
 
 
-sleep.addEventListener("input", function () {
+// Sleep
+sleepSlider.addEventListener("input", () => {
 
     sleepValue.textContent =
-        `${this.value} hrs`;
+        `${sleepSlider.value} hrs`;
 
 });
 
 
-// =========================================
-// FORM SUBMIT
-// =========================================
+// =========================================================
+// Elements
+// =========================================================
 
-form.addEventListener("submit", async function (event) {
+const predictBtn = $("predictBtn");
 
-    event.preventDefault();
+const btnText = $("btnText");
 
+const loader = $("loader");
 
-    // -----------------------------------------
-    // Reset previous states
-    // -----------------------------------------
+const resultOverlay = $("resultOverlay");
 
-    errorBox.classList.add("hidden");
+const resultScore = $("resultScore");
 
-    predictionStatus.classList.remove("success");
+const resultMessage = $("resultMessage");
 
+const closeResult = $("closeResult");
 
-    // -----------------------------------------
-    // Collect input
-    // -----------------------------------------
+const againBtn = $("againBtn");
 
-    const data = {
-
-        age:
-            Number(
-                document.getElementById("age").value
-            ),
-
-        gender:
-            document.getElementById("gender").value,
-
-        country:
-            document.getElementById("country").value.trim(),
-
-        academic_level:
-            document.getElementById("academic_level").value,
-
-        most_used_platform:
-            document.getElementById("platform").value,
-
-        purpose_of_use:
-            document.getElementById("purpose").value,
-
-        avg_daily_usage_hours:
-            Number(usage.value),
-
-        daily_unlocks:
-            Number(unlocks.value),
-
-        study_hours:
-            Number(study.value),
-
-        physical_activity_hours:
-            Number(activity.value),
-
-        sleep_hours_per_night:
-            Number(sleep.value),
-
-        stress_level:
-            document.getElementById("stress").value
-
-    };
+const errorToast = $("errorToast");
 
 
-    console.log(
-        "Sending data:",
-        data
-    );
+// =========================================================
+// Error Function
+// =========================================================
+
+function showError(message) {
+
+    errorToast.textContent = message;
+
+    errorToast.classList.remove("hidden");
+
+    setTimeout(() => {
+
+        errorToast.classList.add("hidden");
+
+    }, 5000);
+
+}
 
 
-    // -----------------------------------------
-    // Loading
-    // -----------------------------------------
+// =========================================================
+// Loading State
+// =========================================================
 
-    predictBtn.disabled = true;
+function setLoading(isLoading) {
 
-    buttonText.textContent =
-        "Predicting...";
+    if (isLoading) {
 
-    loader.classList.remove("hidden");
+        predictBtn.disabled = true;
 
+        btnText.textContent =
+            "Predicting...";
+
+        loader.classList.remove("hidden");
+
+    } else {
+
+        predictBtn.disabled = false;
+
+        btnText.textContent =
+            "Predict Mental Health Score";
+
+        loader.classList.add("hidden");
+
+    }
+
+}
+
+
+// =========================================================
+// Prediction
+// =========================================================
+
+predictBtn.addEventListener("click", async () => {
 
     try {
 
-        // =====================================
-        // API REQUEST
-        // =====================================
-
-        const response = await fetch(
-            API_URL,
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-
-                body: JSON.stringify(data)
-            }
-        );
+        setLoading(true);
 
 
-        // =====================================
-        // HANDLE ERROR
-        // =====================================
+        // ---------------------------------------------
+        // Collect Input
+        // ---------------------------------------------
 
-        if (!response.ok) {
+        const requestData = {
 
-            let errorData = null;
+            age: Number(
+                $("age").value
+            ),
 
-            try {
+            gender:
+                $("gender").value,
 
-                errorData =
-                    await response.json();
+            country:
+                $("country").value.trim(),
 
-            } catch (jsonError) {
+            academic_level:
+                $("academic_level").value,
 
-                console.log(
-                    "Could not parse error JSON"
-                );
+            most_used_platform:
+                $("most_used_platform").value,
 
-            }
+            purpose_of_use:
+                $("purpose_of_use").value,
+
+            avg_daily_usage_hours:
+                Number(
+                    $("avg_daily_usage_hours").value
+                ),
+
+            daily_unlocks:
+                Number(
+                    $("daily_unlocks").value
+                ),
+
+            study_hours:
+                Number(
+                    $("study_hours").value
+                ),
+
+            physical_activity_hours:
+                Number(
+                    $("physical_activity_hours").value
+                ),
+
+            sleep_hours_per_night:
+                Number(
+                    $("sleep_hours_per_night").value
+                ),
+
+            stress_level:
+                $("stress_level").value
+
+        };
 
 
-            let message =
-                `Server returned ${response.status}`;
+        // ---------------------------------------------
+        // Basic Validation
+        // ---------------------------------------------
 
+        if (!requestData.country) {
 
-            if (errorData?.detail) {
+            showError(
+                "Please enter your country."
+            );
 
-                if (
-                    Array.isArray(
-                        errorData.detail
-                    )
-                ) {
+            setLoading(false);
 
-                    message =
-                        errorData.detail
-                            .map(
-                                item =>
-                                    item.msg
-                            )
-                            .join(", ");
-
-                } else {
-
-                    message =
-                        errorData.detail;
-
-                }
-
-            }
-
-
-            throw new Error(message);
+            return;
 
         }
 
 
-        // =====================================
-        // GET RESPONSE
-        // =====================================
+        // ---------------------------------------------
+        // Send Request
+        //
+        // IMPORTANT:
+        // Same Render server
+        // ---------------------------------------------
 
-        const prediction =
+        const response = await fetch(
+            "/predict",
+            {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body:
+                    JSON.stringify(requestData)
+
+            }
+        );
+
+
+        // ---------------------------------------------
+        // Handle HTTP Error
+        // ---------------------------------------------
+
+        if (!response.ok) {
+
+            let errorMessage =
+                `Server Error: ${response.status}`;
+
+            try {
+
+                const errorData =
+                    await response.json();
+
+                if (errorData.detail) {
+
+                    errorMessage =
+                        Array.isArray(
+                            errorData.detail
+                        )
+                            ? errorData.detail
+                                .map(
+                                    item =>
+                                        item.msg
+                                )
+                                .join(", ")
+                            : errorData.detail;
+
+                }
+
+            } catch (error) {
+
+                // Ignore JSON parsing error
+
+            }
+
+            throw new Error(errorMessage);
+
+        }
+
+
+        // ---------------------------------------------
+        // Get Result
+        // ---------------------------------------------
+
+        const result =
             await response.json();
 
 
         console.log(
-            "API response:",
-            prediction
+            "Prediction result:",
+            result
         );
 
 
-        // =====================================
-        // DISPLAY SCORE
-        // =====================================
+        // ---------------------------------------------
+        // Show Score
+        // ---------------------------------------------
 
         const score =
             Number(
-                prediction.predicted_mental_health_score
+                result.predicted_mental_health_score
             );
 
 
-        if (Number.isNaN(score)) {
+        resultScore.textContent =
+            score.toFixed(2);
 
-            throw new Error(
-                "Invalid prediction received from API."
-            );
+
+        // ---------------------------------------------
+        // Message
+        // ---------------------------------------------
+
+        if (score < 4) {
+
+            resultMessage.textContent =
+                "The predicted score is relatively low based on the information provided.";
+
+        } else if (score < 7) {
+
+            resultMessage.textContent =
+                "The predicted score is in the moderate range based on the information provided.";
+
+        } else {
+
+            resultMessage.textContent =
+                "The predicted score is relatively high based on the information provided.";
 
         }
 
 
-        predictionScore.textContent =
-            score.toFixed(2);
+        // ---------------------------------------------
+        // Open Result
+        // ---------------------------------------------
 
-
-        // =====================================
-        // SCORE ANIMATION
-        // =====================================
-
-        scoreCircle.classList.remove(
-            "updated"
+        resultOverlay.classList.remove(
+            "hidden"
         );
 
 
-        void scoreCircle.offsetWidth;
-
-
-        scoreCircle.classList.add(
-            "updated"
-        );
-
-
-        // =====================================
-        // SUCCESS STATUS
-        // =====================================
-
-        predictionStatus.innerHTML =
-            `
-            Prediction generated successfully.
-            <br>
-            <strong>Model score: ${score.toFixed(2)}</strong>
-            `;
-
-
-        predictionStatus.classList.add(
-            "success"
-        );
-
-
-    }
-
-    catch (error) {
+    } catch (error) {
 
         console.error(
             "Prediction error:",
             error
         );
 
-
-        errorMessage.textContent =
-            error.message;
-
-
-        errorBox.classList.remove(
-            "hidden"
+        showError(
+            error.message ||
+            "Something went wrong while predicting."
         );
 
 
-        predictionStatus.textContent =
-            "Prediction could not be generated.";
+    } finally {
 
-    }
-
-
-    finally {
-
-        // =====================================
-        // RESET BUTTON
-        // =====================================
-
-        predictBtn.disabled = false;
-
-        buttonText.textContent =
-            "Predict Mental Health Score";
-
-        loader.classList.add(
-            "hidden"
-        );
+        setLoading(false);
 
     }
 
 });
+
+
+// =========================================================
+// Close Result
+// =========================================================
+
+closeResult.addEventListener(
+    "click",
+    () => {
+
+        resultOverlay.classList.add(
+            "hidden"
+        );
+
+    }
+);
+
+
+// =========================================================
+// Check Again
+// =========================================================
+
+againBtn.addEventListener(
+    "click",
+    () => {
+
+        resultOverlay.classList.add(
+            "hidden"
+        );
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+
+    }
+);
+
+
+// =========================================================
+// Close When Clicking Outside
+// =========================================================
+
+resultOverlay.addEventListener(
+    "click",
+    (event) => {
+
+        if (
+            event.target ===
+            resultOverlay
+        ) {
+
+            resultOverlay.classList.add(
+                "hidden"
+            );
+
+        }
+
+    }
+);
